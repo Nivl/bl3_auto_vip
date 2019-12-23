@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
-	. "net/http"
+	"net/http"
 	"net/http/cookiejar"
 
 	"github.com/PuerkitoBio/goquery"
@@ -14,25 +15,25 @@ import (
 )
 
 type HttpClient struct {
-	Client
-	headers Header
+	http.Client
+	headers http.Header
 }
 
 type HttpResponse struct {
-	Response
+	http.Response
 }
 
 func NewHttpClient() (*HttpClient, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, errors.New("Failed to setup cookies")
+		return nil, fmt.Errorf("could not setup cookies: %w", err)
 	}
 
 	return &HttpClient{
-		Client{
+		http.Client{
 			Jar: jar,
 		},
-		Header{
+		http.Header{
 			"User-Agent": []string{"BL3 Auto Vip"},
 		},
 	}, nil
@@ -41,30 +42,30 @@ func NewHttpClient() (*HttpClient, error) {
 func (response *HttpResponse) BodyAsHtmlDoc() (*goquery.Document, error) {
 	defer response.Body.Close()
 
-	if response.StatusCode != 200 {
-		return nil, errors.New("Invalid response code")
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("invalid response code, expected %d got %d", http.StatusOK, response.StatusCode)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
-		return nil, errors.New("Invalid html")
+		return nil, fmt.Errorf("could not parse HTML: %w", err)
 	}
 
 	return doc, nil
 }
 
-func (response *HttpResponse) BodyAsJson() (*gojsonq.JSONQ, error) {
+func (response *HttpResponse) BodyAsJSON() (*gojsonq.JSONQ, error) {
 	defer response.Body.Close()
 
 	bodyBytes, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return nil, errors.New("Invalid response json")
+		return nil, fmt.Errorf("could not read response: %w", err)
 	}
 
 	return JsonFromBytes(bodyBytes), nil
 }
 
-func getResponse(res *Response, err error) (*HttpResponse, error) {
+func getResponse(res *http.Response, err error) (*HttpResponse, error) {
 	return &HttpResponse{
 		*res,
 	}, err
@@ -74,7 +75,7 @@ func (client *HttpClient) SetDefaultHeader(k, v string) {
 	client.headers.Set(k, v)
 }
 
-func (client *HttpClient) Do(req *Request) (*HttpResponse, error) {
+func (client *HttpClient) Do(req *http.Request) (*HttpResponse, error) {
 	for k, v := range client.headers {
 		for _, x := range v {
 			req.Header.Set(k, x)
@@ -84,7 +85,7 @@ func (client *HttpClient) Do(req *Request) (*HttpResponse, error) {
 }
 
 func (client *HttpClient) Get(url string) (*HttpResponse, error) {
-	req, err := NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func (client *HttpClient) Get(url string) (*HttpResponse, error) {
 }
 
 func (client *HttpClient) Head(url string) (*HttpResponse, error) {
-	req, err := NewRequest("HEAD", url, nil)
+	req, err := http.NewRequest(http.MethodHead, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (client *HttpClient) Head(url string) (*HttpResponse, error) {
 }
 
 func (client *HttpClient) Post(url, contentType string, body io.Reader) (*HttpResponse, error) {
-	req, err := NewRequest("POST", url, body)
+	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -124,28 +125,28 @@ type Bl3Client struct {
 func NewBl3Client() (*Bl3Client, error) {
 	client, err := NewHttpClient()
 	if err != nil {
-		return nil, errors.New("Failed to start client")
+		return nil, fmt.Errorf("could not create http client: %w", err)
 	}
 
-	res, err := client.Get("https://raw.githubusercontent.com/matt1484/bl3_auto_vip/master/config.json")
+	res, err := client.Get("https://raw.githubusercontent.com/Nivl/bl3_auto_vip/master/config.json")
 	if err != nil {
-		return nil, errors.New("Failed to get config")
+		return nil, fmt.Errorf("could not retrive config file from github: %w", err)
 	}
 
-	configJson, err := res.BodyAsJson()
+	configJSON, err := res.BodyAsJSON()
 	if err != nil {
-		return nil, errors.New("Failed to get config")
+		return nil, fmt.Errorf("could not parse body as json: %w", err)
 	}
 	config := Bl3Config{}
-	configJson.Out(&config)
+	configJSON.Out(&config)
 
 	for header, value := range config.RequestHeaders {
 		client.SetDefaultHeader(header, value)
 	}
 
-	return &Bl3Client {
+	return &Bl3Client{
 		HttpClient: *client,
-		Config: config,
+		Config:     config,
 	}, nil
 }
 
@@ -157,21 +158,22 @@ func (client *Bl3Client) Login(username string, password string) error {
 
 	loginRes, err := client.PostJson(client.Config.LoginUrl, data)
 	if err != nil {
-		return errors.New("Failed to submit login credentials")
+		return fmt.Errorf("could not submit login credentials: %w", err)
 	}
 	defer loginRes.Body.Close()
 
-	if loginRes.StatusCode != 200 {
-		return errors.New("Failed to login")
+	if loginRes.StatusCode != http.StatusOK {
+		return fmt.Errorf("login request return unexpected status code: %d", loginRes.StatusCode)
 	}
 
-	if loginRes.Header.Get(client.Config.LoginRedirectHeader) == "" {
-		return errors.New("Failed to start session")
+	redirectHeader := loginRes.Header.Get(client.Config.LoginRedirectHeader)
+	if redirectHeader == "" {
+		return errors.New("could not find redirect header")
 	}
 
-	sessionRes, err := client.Get(loginRes.Header.Get(client.Config.LoginRedirectHeader))
+	sessionRes, err := client.Get(redirectHeader)
 	if err != nil {
-		return errors.New("Failed to get session")
+		return fmt.Errorf("could not get session: %w", err)
 	}
 	defer sessionRes.Body.Close()
 
