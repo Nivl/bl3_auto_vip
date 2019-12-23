@@ -18,13 +18,9 @@ func JsonFromBytes(bytes []byte) *gojsonq.JSONQ {
 	return JsonFromString(string(bytes))
 }
 
+// Bl3Config contains the information needed to fetch the correct data
 type Bl3Config struct {
-	Version string `json:"version"`
-	LoginUrl string `json:"loginUrl"`
-	LoginRedirectHeader string `json:"loginRedirectHeader"`
-	SessionIdHeader string `json:"sessionIdHeader"`
-	RequestHeaders map[string]string `json:"requestHeaders"`
-	SessionHeader string `json:"sessionHeader"`
-	Vip VipConfig `json:"vipConfig"`
-	Shift ShiftConfig `json:"shiftConfig"`
+	Version string    `json:"version"`
+	VIP     VipConfig `json:"vipConfig"`
+	// Shift   ShiftConfig `json:"shiftConfig"`
 }

@@ -1,0 +1,53 @@
+{
+  "lastProvided": 1234567890,
+  "platforms": ["xboxlive"],
+  "displayName": "SomeOne",
+  "playedGames": [
+    {
+      "title": "willow2",
+      "platforms": [
+        {
+          "service": "xboxlive",
+          "hardware": "xbox360"
+        },
+        {
+          "service": "xboxlive",
+          "hardware": "xboxone"
+        }
+      ]
+    },
+    {
+      "title": "cork",
+      "platforms": [
+        {
+          "service": "xboxlive",
+          "hardware": "xboxone"
+        }
+      ]
+    },
+    {
+      "title": "oak",
+      "platforms": [
+        {
+          "service": "xboxlive",
+          "hardware": "xboxone"
+        }
+      ]
+    }
+  ],
+  "shiftUserId": "1234567890",
+  "_SCHEMA_VERSION": 3,
+  "ctUsername": "4a20e21dfb2827c24895abe08419aa5422050c0b3f5d94ab37a6e134ea585c69",
+  "profile": {
+    "avatar": 1,
+    "theme": 2
+  },
+  "gunRewardCount": 3,
+  "ctJoined": 1234567890,
+  "redeemedRewardSlugByMysteryBox": {
+    "weaponizer-s3": "jakobs-skullmasher-tbps",
+    "weaponizer-s2": "effervescent-hotmama-bl2",
+    "weaponizer-s1": "dahl-veruc-bl2"
+  },
+  "lastModified": 1577075024594
+}
