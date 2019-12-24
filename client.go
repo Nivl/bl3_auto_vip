@@ -32,17 +32,18 @@ type Bl3Client interface {
 type bl3Client struct {
 	http    *http.Client
 	headers http.Header
-	Config  *Bl3Config
 }
 
 // NewBl3Client creates an returns a new client used to interact with
 // all the needed APIs
-func NewBl3Client() (Bl3Client, error) {
+func NewBl3Client() Bl3Client {
 	// We need to setup a cookie jar so we can read/write on multiple
 	// endpoints
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, fmt.Errorf("could not setup cookies jar: %w", err)
+		// We panic because as of today, cookie.New always returns nil
+		// So it's just a safety net
+		panic(fmt.Errorf("could not setup cookies jar: %w", err))
 	}
 
 	clt := &bl3Client{
@@ -51,30 +52,12 @@ func NewBl3Client() (Bl3Client, error) {
 			Timeout: 1 * time.Minute,
 		},
 		headers: http.Header{
-			"User-Agent": []string{"BL3 Auto Vip"},
+			"User-Agent": []string{"Borderland's auto redemption"},
+			"Origin":     []string{"https://borderlands.com"},
+			"Referer":    []string{"https://borderlands.com/en-US/vip/"},
 		},
 	}
-
-	// Fetch & decode the config fle
-	// TODO(melvin): don't hardcode the link
-	resp, err := clt.http.Get("https://raw.githubusercontent.com/Nivl/bl3_auto_vip/master/config.json")
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve config file from github: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		content, _ := ioutil.ReadAll(resp.Body)
-		return nil, fmt.Errorf("config file request returned unexpected code %d with body %s", resp.StatusCode, string(content))
-	}
-	if err = json.NewDecoder(resp.Body).Decode(&clt.Config); err != nil {
-		return nil, fmt.Errorf("could not JSON decode the config file %w", err)
-	}
-
-	// Set the needed headers
-	// Taken from https://raw.githubusercontent.com/matt1484/bl3_auto_vip/master/config.json
-	clt.headers.Set("Origin", "https://borderlands.com")
-	clt.headers.Set("Referer", "https://borderlands.com/en-US/vip/")
-	return clt, nil
+	return clt
 }
 
 // Login logs the user in 2k's website
