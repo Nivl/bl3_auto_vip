@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	bl3 "github.com/matt1484/bl3_auto_vip"
+	bl3 "github.com/Nivl/blcodes"
 	"github.com/shibukawa/configdir"
 )
 
