@@ -1,2 +1,6 @@
+github.com/logrusorgru/aurora v0.0.0-20191116043053-66b7ad493a23 h1:Wp7NjqGKGN9te9N/rvXYRhlVcrulGdxnz8zadXWs7fc=
+github.com/logrusorgru/aurora v0.0.0-20191116043053-66b7ad493a23/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0 h1:Xuk8ma/ibJ1fOy4Ee11vHhUFHQNpHhrBneOCNHVXS5w=
 github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0/go.mod h1:7AwjWCpdPhkSmNAgUv5C7EJ4AbmjEB3r047r3DXWu3Y=
+golang.org/x/sys v0.0.0-20191224085550-c709ea063b76 h1:Dho5nD6R3PcW2SH1or8vS0dszDaXRxIw55lBX7XiE5g=
+golang.org/x/sys v0.0.0-20191224085550-c709ea063b76/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

@@ -21,6 +21,7 @@ type flags struct {
 type config struct {
 	cacheFileName string
 	client        bl3.Bl3Client
+	printer       bl3.Printer
 }
 
 func main() {
@@ -30,7 +31,8 @@ func main() {
 	flag.Parse()
 
 	cfg := &config{
-		client: bl3.NewBl3Client(),
+		client:  bl3.NewBl3Client(),
+		printer: bl3.NewPrinter(),
 	}
 
 	if err := run(f, cfg); err != nil {
@@ -57,43 +59,48 @@ func run(f *flags, cfg *config) error {
 	}
 
 	// Log the user in
-	fmt.Printf(`Logging in as "%s"...`, f.Email)
+	cfg.printer.Start("Logging in as " + f.Email)
 	if err := cfg.client.Login(f.Email, f.Password); err != nil {
 		return fmt.Errorf("could not login: %w", err)
 	}
-	fmt.Println("success!")
+	cfg.printer.Success()
 
 	return redeemShift(cfg)
 }
 
 func redeemShift(cfg *config) error {
-	fmt.Print("Getting SHIFT platform list for your user...")
+	cfg.printer.Start("Getting SHIFT platform list for your user")
 	ownedPlatforms, err := cfg.client.GetUserPlatforms()
 	if err != nil {
 		return fmt.Errorf("could not get user's platforms: %w", err)
 	}
-	fmt.Println("done!")
+	cfg.printer.Success()
 
-	fmt.Print("Getting previously redeemed SHIFT codes...")
+	// TODO(melvin): Move to own function to remove all the elses
+	cfg.printer.Start("Getting previously redeemed SHIFT codes")
 	configDirs := configdir.New("bl3-auto-vip", "bl3-auto-vip")
 	redeemedCodes := map[string]map[string]struct{}{}
 	folder := configDirs.QueryFolderContainsFile(cfg.cacheFileName)
 	if folder != nil {
 		data, err := folder.ReadFile(cfg.cacheFileName)
-		if err == nil && data != nil {
-			if err = json.Unmarshal(data, &redeemedCodes); err != nil {
-				fmt.Print(fmt.Errorf("could not read cache file content: %w", err))
-			}
+		if err != nil {
+			return fmt.Errorf("could not read cache file content: %w", err)
 		}
+		if err = json.Unmarshal(data, &redeemedCodes); err != nil {
+			cfg.printer.Failed(fmt.Errorf("could not parse cache file content: %w", err).Error())
+		} else {
+			cfg.printer.Success()
+		}
+	} else {
+		cfg.printer.Success()
 	}
-	fmt.Println("done!")
 
-	fmt.Print("Getting latest SHIFT codes...")
+	cfg.printer.Start("Getting latest SHIFT codes")
 	shiftCodes, err := cfg.client.GetFullShiftCodeList()
 	if err != nil {
 		return fmt.Errorf("could not get new SHIFT codes: %w", err)
 	}
-	fmt.Println("done!")
+	cfg.printer.Success()
 
 	foundCodes := false
 	for _, code := range shiftCodes {
@@ -117,27 +124,30 @@ func redeemShift(cfg *config) error {
 				}
 			}
 
-			// We redeem the code!
+			// Let's redeem the code!
 			foundCodes = true
-			fmt.Printf(`Trying "%s" SHIFT code "%s"...`, platform, code.Code)
-			if err := cfg.client.RedeemShiftCode(code.Code, platform); err != nil {
-				lcErr := strings.ToLower(err.Error())
-				if !strings.Contains(lcErr, "already") {
-					fmt.Printf("Could not redeem: %s\n", err.Error())
-					continue
-				}
-				fmt.Println("Already redeemed")
-			}
 			if _, ok := redeemedCodes[code.Code]; !ok {
 				redeemedCodes[code.Code] = map[string]struct{}{}
 			}
 			redeemedCodes[code.Code][platform] = struct{}{}
-			fmt.Println("Redeemed!")
+
+			cfg.printer.Start(fmt.Sprintf(`Trying "%s" SHIFT code "%s"`, platform, code.Code))
+			if err := cfg.client.RedeemShiftCode(code.Code, platform); err != nil {
+				if strings.Contains(strings.ToLower(err.Error()), "already") {
+					cfg.printer.SuccessMsg("Already redeemed")
+					continue
+				}
+				cfg.printer.Failed(fmt.Sprintf("Could not redeem: %s", err.Error()))
+				delete(redeemedCodes, code.Code)
+				continue
+
+			}
+			cfg.printer.SuccessMsg("Redeemed!")
 		}
 	}
 
 	if !foundCodes {
-		fmt.Println("No new SHIFT codes at this time. Try again later.")
+		cfg.printer.Info("No new SHIFT codes at this time. Try again later.")
 		return nil
 	}
 
