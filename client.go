@@ -112,16 +112,6 @@ func (c *bl3Client) get(url string) (*http.Response, error) {
 	return c.do(req)
 }
 
-// head sends a HEAD request to a 2k/borderland server
-// This is not safe to use for a non 2k/borderland website
-func (c *bl3Client) head(url string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodHead, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	return c.do(req)
-}
-
 // post sends a POST request to a 2k/borderland server
 // This is not safe to use for a non 2k/borderland website
 func (c *bl3Client) post(url, contentType string, body io.Reader) (*http.Response, error) {

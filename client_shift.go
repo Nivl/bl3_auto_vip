@@ -39,7 +39,7 @@ func (c *bl3Client) GetCodePlatforms(code string) (map[string]struct{}, error) {
 		GameCodeName string `json:"offer_title"`
 	}
 	type codeInfoList struct {
-		codes []codeInfo `json:"entitlement_offer_codes"`
+		Codes []codeInfo `json:"entitlement_offer_codes"`
 	}
 
 	// Parse the request response into an object
@@ -50,7 +50,7 @@ func (c *bl3Client) GetCodePlatforms(code string) (map[string]struct{}, error) {
 
 	// get all the platforms
 	platforms := map[string]struct{}{}
-	for _, info := range list.codes {
+	for _, info := range list.Codes {
 		if info.IsActive && info.GameCodeName == bl3CodeName {
 			platforms[info.Platform] = struct{}{}
 		}
