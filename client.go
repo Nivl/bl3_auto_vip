@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+// HTTPClient is an interface used to make HTTP request
+//go:generate mockgen -destination mocks/http_client.go -package mocks github.com/Nivl/blcodes HTTPClient
+type HTTPClient interface {
+	Get(url string) (resp *http.Response, err error)
+	Do(req *http.Request) (*http.Response, error)
+}
+
 const (
 	bl3CodeName = "oak"
 	loginURL    = "https://api.2k.com/borderlands/users/authenticate"
@@ -30,7 +37,7 @@ type Bl3Client interface {
 }
 
 type bl3Client struct {
-	http    *http.Client
+	http    HTTPClient
 	headers http.Header
 }
 

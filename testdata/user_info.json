@@ -1,6 +1,6 @@
 {
   "lastProvided": 1234567890,
-  "platforms": ["xboxlive"],
+  "platforms": ["xboxlive", "stadia", "twitch"],
   "displayName": "SomeOne",
   "playedGames": [
     {

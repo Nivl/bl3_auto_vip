@@ -17,6 +17,16 @@ type ShiftCode struct {
 	IsUniversal bool
 }
 
+// nonGamingPlatform contains the list of social platforms that can be linked
+// to gearbox's shift website
+var nonGamingPlatform = map[string]struct{}{
+	"twitch":   struct{}{},
+	"facebook": struct{}{},
+	"google":   struct{}{},
+	"twitter":  struct{}{},
+	"2k":       struct{}{},
+}
+
 // GetShiftPlatforms returns the list of platforms available for a single code
 func (c *bl3Client) GetCodePlatforms(code string) (map[string]struct{}, error) {
 	// See testdata/shift_info.json to see an output sample
@@ -147,12 +157,16 @@ func (c *bl3Client) GetUserPlatforms() (map[string]struct{}, error) {
 	}
 
 	// get all the platforms
+	// An important thing to note is that we want the GAME platforms
+	// while we're also getting stream platform (like twitch) from
+	// the endpoint.
 	platforms := map[string]struct{}{}
 	for _, p := range uInfo.Platforms {
-		if p != "twitch" {
-			platforms[p] = struct{}{}
+		p = strings.ToLower(p)
+		if _, isSocial := nonGamingPlatform[p]; isSocial {
+			continue
 		}
-
+		platforms[p] = struct{}{}
 	}
 	return platforms, nil
 }
@@ -195,17 +209,16 @@ func (c *bl3Client) GetFullShiftCodeList() ([]*ShiftCode, error) {
 	codes := make([]*ShiftCode, 0, len(respObj[0].Codes))
 	for _, code := range respObj[0].Codes {
 		newCode := &ShiftCode{
-			Code:   code.Code,
-			Reward: code.Reward,
+			Code:      code.Code,
+			Reward:    code.Reward,
+			Platforms: map[string]struct{}{},
 		}
 		platform := strings.ToLower(code.Platform)
 		switch platform {
 		case "universal":
 			newCode.IsUniversal = true
 		default:
-			newCode.Platforms = map[string]struct{}{
-				platform: struct{}{},
-			}
+			newCode.Platforms[platform] = struct{}{}
 		}
 		codes = append(codes, newCode)
 	}
